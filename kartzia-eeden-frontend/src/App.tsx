@@ -1,8 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from './context/authStore';
 import { useCartStore } from './context/cartStore';
+import { HomePage } from './pages/HomePage';
+import { CartPage } from './pages/CartPage';
+import { AuthPage } from './pages/AuthPage';
+import { CheckoutPage } from './pages/CheckoutPage';
+import { OrdersPage } from './pages/OrdersPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
   const { user, isAuthenticated } = useAuthStore();
   const { items } = useCartStore();
 
@@ -19,109 +26,263 @@ function App() {
     checkAuth();
   }, [user]);
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage onNavigate={setCurrentPage} />;
+      case 'cart':
+        return <CartPage onNavigate={setCurrentPage} />;
+      case 'auth':
+        return <AuthPage onNavigate={setCurrentPage} />;
+      case 'checkout':
+        return <CheckoutPage onNavigate={setCurrentPage} />;
+      case 'orders':
+        return <OrdersPage onNavigate={setCurrentPage} />;
+      case 'profile':
+        return <ProfilePage onNavigate={setCurrentPage} />;
+      default:
+        return <HomePage onNavigate={setCurrentPage} />;
+    }
+  };
+
   return (
     <div className="app" style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* Header */}
       <header
         style={{
-          backgroundColor: '#333',
+          backgroundColor: '#2c3e50',
           color: 'white',
-          padding: '1rem',
+          padding: '1rem 2rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
         }}
       >
-        <h1 style={{ margin: 0 }}>Kartzia Eeden</h1>
-        <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none' }}>
+        <button
+          onClick={() => setCurrentPage('home')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+          aria-label="Kartzia Eeden home"
+        >
+          🏪 Kartzia Eeden
+        </button>
+
+        <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          {/* Search Bar */}
+          <input
+            type="text"
+            placeholder="Search products..."
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              border: 'none',
+              width: '250px',
+            }}
+            aria-label="Search products"
+          />
+
+          {/* Navigation Links */}
+          <button
+            onClick={() => setCurrentPage('home')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              textDecoration: currentPage === 'home' ? 'underline' : 'none',
+            }}
+            aria-current={currentPage === 'home' ? 'page' : undefined}
+          >
             Home
-          </a>
+          </button>
+
           {isAuthenticated ? (
             <>
-              <a href="/profile" style={{ color: 'white', textDecoration: 'none' }}>
-                Profile
-              </a>
-              <a href="/orders" style={{ color: 'white', textDecoration: 'none' }}>
-                Orders
-              </a>
               <button
-                onClick={() => {
-                  useAuthStore.getState().logout();
-                  window.location.href = '/';
-                }}
+                onClick={() => setCurrentPage('profile')}
                 style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#dc3545',
-                  color: 'white',
+                  background: 'none',
                   border: 'none',
-                  borderRadius: '4px',
+                  color: 'white',
+                  fontSize: '1rem',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
                 }}
+                aria-label="User profile"
               >
-                Logout
+                👤 {user?.name?.split(' ')[0]}
+              </button>
+              <button
+                onClick={() => setCurrentPage('orders')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+                aria-label="My orders"
+              >
+                📦 Orders
               </button>
             </>
           ) : (
-            <>
-              <a href="/login" style={{ color: 'white', textDecoration: 'none' }}>
-                Login
-              </a>
-              <a href="/signup" style={{ color: 'white', textDecoration: 'none' }}>
-                Signup
-              </a>
-            </>
+            <button
+              onClick={() => setCurrentPage('auth')}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#3498db',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+              aria-label="Login or signup"
+            >
+              🔐 Login / Sign Up
+            </button>
           )}
-          <a
-            href="/cart"
+
+          {/* Cart Icon */}
+          <button
+            onClick={() => setCurrentPage('cart')}
             style={{
-              color: 'white',
-              textDecoration: 'none',
               position: 'relative',
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
             }}
             aria-label={`Shopping cart with ${items.length} items`}
+            aria-current={currentPage === 'cart' ? 'page' : undefined}
           >
-            🛒 ({items.length})
-          </a>
+            🛒
+            {items.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  backgroundColor: '#e74c3c',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold',
+                }}
+                aria-label={`${items.length} items in cart`}
+              >
+                {items.length}
+              </span>
+            )}
+          </button>
         </nav>
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 1rem' }}>
-        <section
-          id="main-content"
-          style={{
-            backgroundColor: 'white',
-            padding: '2rem',
-            borderRadius: '8px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-        >
-          <h2>Welcome to Kartzia Eeden</h2>
-          <p>
-            This is your e-commerce platform. Browse our products, add them to your cart, and checkout with ease.
-          </p>
-          {isAuthenticated && (
-            <p style={{ color: '#28a745', fontWeight: 'bold' }}>
-              Welcome back, {user?.name}!
-            </p>
-          )}
-        </section>
+      <main id="main-content">
+        {renderPage()}
       </main>
 
       {/* Footer */}
       <footer
         style={{
-          backgroundColor: '#333',
+          backgroundColor: '#2c3e50',
           color: 'white',
           textAlign: 'center',
-          padding: '1rem',
-          marginTop: '2rem',
+          padding: '2rem',
+          marginTop: '3rem',
         }}
       >
-        <p style={{ margin: 0 }}>
-          &copy; 2024 Kartzia Eeden. All rights reserved.
-        </p>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '2rem',
+              marginBottom: '2rem',
+              textAlign: 'left',
+            }}
+          >
+            <div>
+              <h4>About Us</h4>
+              <p style={{ fontSize: '0.9rem', color: '#bdc3c7' }}>
+                Kartzia Eeden offers premium products for the modern lifestyle.
+              </p>
+            </div>
+            <div>
+              <h4>Quick Links</h4>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                <li>
+                  <button
+                    onClick={() => setCurrentPage('home')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#bdc3c7',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Home
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setCurrentPage('cart')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#bdc3c7',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Cart
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4>Contact</h4>
+              <p style={{ fontSize: '0.9rem', color: '#bdc3c7' }}>
+                Email: info@kartzias.com<br />
+                Phone: 1-800-KARTZIA
+              </p>
+            </div>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px solid #34495e' }} />
+          <p style={{ margin: '1rem 0 0 0', fontSize: '0.9rem', color: '#95a5a6' }}>
+            &copy; 2024 Kartzia Eeden. All rights reserved. | Privacy Policy | Terms & Conditions
+          </p>
+        </div>
       </footer>
 
       {/* Accessibility Announcer */}

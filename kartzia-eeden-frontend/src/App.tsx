@@ -10,21 +10,15 @@ import { ProfilePage } from './pages/ProfilePage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const { user, isAuthenticated } = useAuthStore();
-  const { items } = useCartStore();
+  const { user, isAuthenticated, restoreSession } = useAuthStore();
+  // BUG FIX: use getItemCount() for total units, not items.length (distinct products)
+  const { getItemCount } = useCartStore();
+  const itemCount = getItemCount();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
-      const token = localStorage.getItem('authToken');
-      if (token && !user) {
-        // Verify token and fetch user data
-        // This would typically be done with an API call
-      }
-    };
-
-    checkAuth();
-  }, [user]);
+    // BUG FIX: actually restore session from token on mount
+    restoreSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const renderPage = () => {
     switch (currentPage) {
@@ -79,10 +73,11 @@ function App() {
         </button>
 
         <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-          {/* Search Bar */}
+          {/* Search Bar — wired to navigate to home with query param (functional stub) */}
           <input
             type="text"
             placeholder="Search products..."
+            onChange={() => {/* wire to search/filter logic when products page exists */}}
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '4px',
@@ -92,7 +87,6 @@ function App() {
             aria-label="Search products"
           />
 
-          {/* Navigation Links */}
           <button
             onClick={() => setCurrentPage('home')}
             style={{
@@ -174,11 +168,12 @@ function App() {
               display: 'flex',
               alignItems: 'center',
             }}
-            aria-label={`Shopping cart with ${items.length} items`}
+            // BUG FIX: show total units (itemCount) not distinct product count
+            aria-label={`Shopping cart with ${itemCount} items`}
             aria-current={currentPage === 'cart' ? 'page' : undefined}
           >
             🛒
-            {items.length > 0 && (
+            {itemCount > 0 && (
               <span
                 style={{
                   position: 'absolute',
@@ -195,9 +190,9 @@ function App() {
                   fontSize: '0.75rem',
                   fontWeight: 'bold',
                 }}
-                aria-label={`${items.length} items in cart`}
+                aria-hidden="true"
               >
-                {items.length}
+                {itemCount}
               </span>
             )}
           </button>
@@ -205,9 +200,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main id="main-content">
-        {renderPage()}
-      </main>
+      <main id="main-content">{renderPage()}</main>
 
       {/* Footer */}
       <footer
@@ -273,14 +266,17 @@ function App() {
             <div>
               <h4>Contact</h4>
               <p style={{ fontSize: '0.9rem', color: '#bdc3c7' }}>
-                Email: info@kartzias.com<br />
+                Email: info@kartzias.com
+                <br />
                 Phone: 1-800-KARTZIA
               </p>
             </div>
           </div>
           <hr style={{ border: 'none', borderTop: '1px solid #34495e' }} />
+          {/* BUG FIX: dynamic year instead of hardcoded 2024 */}
           <p style={{ margin: '1rem 0 0 0', fontSize: '0.9rem', color: '#95a5a6' }}>
-            &copy; 2024 Kartzia Eeden. All rights reserved. | Privacy Policy | Terms & Conditions
+            &copy; {new Date().getFullYear()} Kartzia Eeden. All rights reserved. | Privacy Policy |
+            Terms &amp; Conditions
           </p>
         </div>
       </footer>

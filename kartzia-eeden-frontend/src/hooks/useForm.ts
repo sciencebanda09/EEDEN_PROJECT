@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ZodSchema, ZodError } from 'zod';
 
 interface FormState<T> {
@@ -11,7 +11,8 @@ interface FormState<T> {
 interface UseFormReturn<T> extends FormState<T> {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  handleSubmit: (onSubmit: (values: T) => Promise<void> | void) => (e: React.FormEvent) => Promise<void>;
+  // BUG FIX: calling with no args (or omitting) uses the onSubmit given at init
+  handleSubmit: (onSubmitOverride?: (values: T) => Promise<void> | void) => (e: React.FormEvent) => Promise<void>;
   setFieldValue: (field: keyof T, value: unknown) => void;
   setFieldError: (field: keyof T, error: string) => void;
   reset: () => void;
@@ -29,17 +30,23 @@ export function useForm<T extends Record<string, unknown>>(
     isSubmitting: false,
   });
 
+  // BUG FIX: keep latest values + onSubmit in refs so handleSubmit doesn't capture stale closures
+  const valuesRef = useRef<T>(initialValues);
+  valuesRef.current = formState.values;
+
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+
   const validate = useCallback(
     (values: T): Record<string, string> => {
       if (!validationSchema) return {};
-
       try {
         validationSchema.parse(values);
         return {};
       } catch (error) {
         if (error instanceof ZodError) {
           const fieldErrors: Record<string, string> = {};
-          (error as any).issues?.forEach((err: any) => {
+          error.issues.forEach((err) => {
             const path = err.path.join('.');
             fieldErrors[path] = err.message;
           });
@@ -55,14 +62,9 @@ export function useForm<T extends Record<string, unknown>>(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
       const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-
       setFormState((prev) => {
         const newValues = { ...prev.values, [name]: newValue };
-        return {
-          ...prev,
-          values: newValues,
-          errors: validate(newValues),
-        };
+        return { ...prev, values: newValues, errors: validate(newValues) };
       });
     },
     [validate]
@@ -80,42 +82,44 @@ export function useForm<T extends Record<string, unknown>>(
   );
 
   const handleSubmit = useCallback(
-    (onSubmitCallback: (values: T) => Promise<void> | void) =>
+    (onSubmitOverride?: (values: T) => Promise<void> | void) =>
       async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const errors = validate(formState.values);
+        const currentValues = valuesRef.current;
+        const errors = validate(currentValues);
+
+        // Mark all fields touched and show errors
         setFormState((prev) => ({
           ...prev,
           errors,
           touched: Object.keys(prev.values).reduce(
             (acc, key) => ({ ...acc, [key]: true }),
-            {}
+            {} as Record<string, boolean>
           ),
         }));
 
         if (Object.keys(errors).length > 0) return;
 
-        setFormState((prev) => ({ ...prev, isSubmitting: true }));
+        // BUG FIX: use override only if it's a real callback, else fall back to stored onSubmit
+        const callback = onSubmitOverride ?? onSubmitRef.current;
+        if (!callback) return;
 
+        setFormState((prev) => ({ ...prev, isSubmitting: true }));
         try {
-          await (onSubmitCallback ? onSubmitCallback(formState.values) : onSubmit?.(formState.values));
+          await callback(currentValues);
         } finally {
           setFormState((prev) => ({ ...prev, isSubmitting: false }));
         }
       },
-    [formState.values, validate, onSubmit]
+    [validate]
   );
 
   const setFieldValue = useCallback(
     (field: keyof T, value: unknown) => {
       setFormState((prev) => {
         const newValues = { ...prev.values, [field]: value };
-        return {
-          ...prev,
-          values: newValues,
-          errors: validate(newValues),
-        };
+        return { ...prev, values: newValues, errors: validate(newValues) };
       });
     },
     [validate]

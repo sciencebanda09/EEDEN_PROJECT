@@ -39,7 +39,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     },
   ];
 
-  const handleAddToCart = (product: typeof sampleProducts[0]) => {
+  const handleAddToCart = (product: (typeof sampleProducts)[0]) => {
     addItem({
       id: product.id,
       name: product.name,
@@ -52,9 +52,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <div className="home-page">
       {/* Hero Section */}
+      {/* BUG FIX: use `background` (not `backgroundColor`) for gradients */}
       <section
         style={{
-          backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           padding: '4rem 2rem',
           textAlign: 'center',
@@ -67,8 +68,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         <p style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>
           Premium products for the modern lifestyle
         </p>
+        {/* BUG FIX: 'products' page doesn't exist — scroll down to featured products instead */}
         <button
-          onClick={() => onNavigate('products')}
+          onClick={() => document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' })}
           style={{
             padding: '0.75rem 2rem',
             backgroundColor: 'white',
@@ -86,7 +88,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       </section>
 
       {/* Featured Products */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
+      <section
+        id="featured-products"
+        style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}
+      >
         <h2 style={{ textAlign: 'center', marginBottom: '3rem' }}>Featured Products</h2>
         <div
           style={{
@@ -110,22 +115,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-8px)';
-                (e.currentTarget as HTMLElement).style.boxShadow =
-                  '0 8px 16px rgba(0,0,0,0.15)';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLElement).style.boxShadow =
-                  '0 2px 8px rgba(0,0,0,0.1)';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
               }}
             >
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                {product.image}
-              </div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{product.image}</div>
               <h3 style={{ marginTop: 0 }}>{product.name}</h3>
-              <p style={{ color: '#666', minHeight: '2.5rem' }}>
-                {product.description}
-              </p>
+              <p style={{ color: '#666', minHeight: '2.5rem' }}>{product.description}</p>
               <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#007bff' }}>
                 ${product.price.toFixed(2)}
               </p>
@@ -175,9 +174,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               { icon: '⭐', title: 'Quality', desc: 'Premium quality products' },
             ].map((feature, idx) => (
               <div key={idx} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>
-                  {feature.icon}
-                </div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>{feature.icon}</div>
                 <h3>{feature.title}</h3>
                 <p style={{ color: '#666' }}>{feature.desc}</p>
               </div>
@@ -201,7 +198,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           Browse our collection and find your perfect products
         </p>
         <button
-          onClick={() => onNavigate('products')}
+          onClick={() => document.getElementById('featured-products')?.scrollIntoView({ behavior: 'smooth' })}
           style={{
             padding: '0.75rem 2rem',
             backgroundColor: 'white',
